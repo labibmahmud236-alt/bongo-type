@@ -92,6 +92,7 @@ class SpeechRecognizerManager(
 
                     val localeStr = when (language) {
                         DictationLanguage.BANGLA -> "bn-BD"
+                        DictationLanguage.ENGLISH -> "en-US"
                         DictationLanguage.BANGLISH -> "bn-BD"
                         DictationLanguage.ARABIC -> "ar-SA"
                     }
@@ -148,6 +149,9 @@ class SpeechRecognizerManager(
         _micState.value = MicState.PROCESSING
 
         val formattedText = when (currentLanguage) {
+            DictationLanguage.ENGLISH -> {
+                rawText.trim()
+            }
             DictationLanguage.BANGLISH -> {
                 BanglishTransliteration.toBanglish(rawText)
             }
@@ -194,6 +198,7 @@ class SpeechRecognizerManager(
                     putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
                     val localeStr = when (currentLanguage) {
                         DictationLanguage.BANGLA, DictationLanguage.BANGLISH -> "bn-BD"
+                        DictationLanguage.ENGLISH -> "en-US"
                         DictationLanguage.ARABIC -> "ar-SA"
                     }
                     putExtra(RecognizerIntent.EXTRA_LANGUAGE, localeStr)

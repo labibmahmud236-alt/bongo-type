@@ -257,6 +257,12 @@ fun ActiveAppWorkbench(
                         "আমি একটু পরে আসছি।",
                         "আজকের আবহাওয়া খুব সুন্দর।"
                     )
+                    DictationLanguage.ENGLISH -> listOf(
+                        "Hello, how are you doing today?",
+                        "I am typing with Bongo Type voice assistant.",
+                        "Meeting is scheduled for tomorrow morning.",
+                        "Thank you for your message!"
+                    )
                     DictationLanguage.BANGLISH -> listOf(
                         "Ami tomar sathe kotha bolchi",
                         "Kemon acho bondhu?",

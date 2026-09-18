@@ -2,6 +2,7 @@ package com.example.model
 
 enum class DictationLanguage(val displayName: String, val nativeName: String, val localeCode: String, val flag: String) {
     BANGLA("Bangla", "বাংলা", "bn-BD", "🇧🇩"),
+    ENGLISH("English", "English", "en-US", "🇺🇸"),
     BANGLISH("Banglish", "Banglish", "bn-BD", "🔤"),
     ARABIC("Arabic", "العربية", "ar-SA", "🇸🇦")
 }

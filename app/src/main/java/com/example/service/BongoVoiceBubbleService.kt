@@ -289,7 +289,8 @@ class BongoVoiceBubbleService : AccessibilityService() {
 
     private fun cycleLanguage() {
         currentLanguage = when (currentLanguage) {
-            DictationLanguage.BANGLA -> DictationLanguage.BANGLISH
+            DictationLanguage.BANGLA -> DictationLanguage.ENGLISH
+            DictationLanguage.ENGLISH -> DictationLanguage.BANGLISH
             DictationLanguage.BANGLISH -> DictationLanguage.ARABIC
             DictationLanguage.ARABIC -> DictationLanguage.BANGLA
         }
@@ -299,8 +300,9 @@ class BongoVoiceBubbleService : AccessibilityService() {
 
     private fun updateLanguageBadge() {
         bubbleLangBadge?.text = when (currentLanguage) {
-            DictationLanguage.BANGLA -> "বাংলা"
-            DictationLanguage.BANGLISH -> "EN"
+            DictationLanguage.BANGLA -> "বাং"
+            DictationLanguage.ENGLISH -> "EN"
+            DictationLanguage.BANGLISH -> "বাং-EN"
             DictationLanguage.ARABIC -> "عربي"
         }
     }
@@ -466,6 +468,7 @@ class BongoVoiceBubbleService : AccessibilityService() {
 
     private fun formatSpokenText(raw: String, language: DictationLanguage): String {
         return when (language) {
+            DictationLanguage.ENGLISH -> raw.trim()
             DictationLanguage.BANGLA -> {
                 val clean = raw.trim()
                 if (!clean.endsWith("।") && !clean.endsWith("?") && !clean.endsWith("!")) {
@@ -493,7 +496,18 @@ class BongoVoiceBubbleService : AccessibilityService() {
         if (target != null && isInputField(target)) {
             try {
                 // Method 1: Append text or set directly via ACTION_SET_TEXT
-                val existingText = target.text?.toString() ?: ""
+                val rawNodeText = target.text?.toString() ?: ""
+                val hintText = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    target.hintText?.toString() ?: ""
+                } else ""
+
+                // Filter out default placeholder/hint text like "Message", "Type a message", "Send a message", etc.
+                val existingText = if (isPlaceholderText(rawNodeText, hintText)) {
+                    ""
+                } else {
+                    rawNodeText
+                }
+
                 val separator = if (existingText.isNotEmpty() && !existingText.endsWith(" ") && !existingText.endsWith("\n")) " " else ""
                 val fullText = existingText + separator + text
 
@@ -521,6 +535,40 @@ class BongoVoiceBubbleService : AccessibilityService() {
         val clip = ClipData.newPlainText("Bongo Type", text)
         clipboard.setPrimaryClip(clip)
         Toast.makeText(this, "ক্লিপবোর্ডে কপি করা হয়েছে! পেস্ট করুন", Toast.LENGTH_SHORT).show()
+    }
+
+    /**
+     * Checks if the text retrieved from AccessibilityNodeInfo is actually placeholder/hint text
+     * like "Message", "Type a message...", "Send message", "Search", etc.
+     */
+    private fun isPlaceholderText(text: String, hint: String): Boolean {
+        if (text.isBlank()) return true
+        if (hint.isNotBlank() && text.equals(hint, ignoreCase = true)) return true
+
+        val lower = text.trim().lowercase()
+        val commonPlaceholders = setOf(
+            "message",
+            "messages",
+            "type a message",
+            "type a message...",
+            "send a message",
+            "send a message...",
+            "send message",
+            "write a message",
+            "write a message...",
+            "write a reply",
+            "write a reply...",
+            "enter message",
+            "chat",
+            "search",
+            "search...",
+            "মেসেজ লিখুন",
+            "মেসেজ লিখুন...",
+            "একটি বার্তা লিখুন",
+            "বার্তা লিখুন"
+        )
+
+        return commonPlaceholders.contains(lower)
     }
 
     private fun pasteViaClipboard(node: AccessibilityNodeInfo, text: String) {
