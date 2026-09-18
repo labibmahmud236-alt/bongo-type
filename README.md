@@ -19,7 +19,7 @@
 
 অ্যান্ড্রয়েড ফোনে সরাসরি ব্যবহার করার জন্য লেটেস্ট আপডেট করা APK ফাইলটি ডাউনলোড করুন:
 
-👉 **[Download BongoType APK (v1.1.0)](https://github.com/labibmahmud236-alt/bongo-type/releases/download/v1.1.0/BongoType-v1.1.0.apk)**
+👉 **[Download BongoType APK (v1.1.1)](https://github.com/labibmahmud236-alt/bongo-type/releases/download/v1.1.1/BongoType-v1.1.1.apk)**
 
 অথবা গিটহাবের [Releases পেজ](https://github.com/labibmahmud236-alt/bongo-type/releases) থেকেও সরাসরি APK ডাউনলোড করতে পারবেন।
 
