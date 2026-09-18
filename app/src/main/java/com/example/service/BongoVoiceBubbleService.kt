@@ -10,6 +10,8 @@ import android.graphics.PixelFormat
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
@@ -49,6 +51,8 @@ class BongoVoiceBubbleService : AccessibilityService() {
 
     private var speechRecognizer: SpeechRecognizer? = null
     private var isListening = false
+    private var isContinuousSessionActive = false
+    private val mainHandler = Handler(Looper.getMainLooper())
     private var currentLanguage: DictationLanguage = DictationLanguage.BANGLA
 
     // Target input node where the user is typing
@@ -217,13 +221,6 @@ class BongoVoiceBubbleService : AccessibilityService() {
 
             updateLanguageBadge()
 
-            // Click listener for microphone voice typing
-            bubbleMicBg?.setOnClickListener {
-                if (!isDragging) {
-                    toggleVoiceTyping()
-                }
-            }
-
             // Language switch on badge click
             bubbleLangBadge?.setOnClickListener {
                 cycleLanguage()
@@ -234,8 +231,8 @@ class BongoVoiceBubbleService : AccessibilityService() {
                 hideBubbleOverlay()
             }
 
-            // Drag handling (smooth moving on screen)
-            bubbleView?.setOnTouchListener { _, motionEvent ->
+            // Common touch listener to handle smooth drag and click on the floating bubble
+            val bubbleDragTouchListener = View.OnTouchListener { _, motionEvent ->
                 when (motionEvent.action) {
                     MotionEvent.ACTION_DOWN -> {
                         initialX = layoutParams?.x ?: 0
@@ -248,7 +245,7 @@ class BongoVoiceBubbleService : AccessibilityService() {
                     MotionEvent.ACTION_MOVE -> {
                         val dx = (motionEvent.rawX - initialTouchX).toInt()
                         val dy = (motionEvent.rawY - initialTouchY).toInt()
-                        if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+                        if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
                             isDragging = true
                             layoutParams?.x = initialX + dx
                             layoutParams?.y = initialY + dy
@@ -266,6 +263,9 @@ class BongoVoiceBubbleService : AccessibilityService() {
                     else -> false
                 }
             }
+
+            bubbleMicBg?.setOnTouchListener(bubbleDragTouchListener)
+            bubbleView?.setOnTouchListener(bubbleDragTouchListener)
 
             windowManager?.addView(bubbleView, layoutParams)
             isBubbleShowing = true
@@ -327,23 +327,33 @@ class BongoVoiceBubbleService : AccessibilityService() {
                         override fun onBufferReceived(buffer: ByteArray?) {}
 
                         override fun onEndOfSpeech() {
-                            bubbleStatusText?.text = "প্রক্রিয়াকরণ..."
+                            bubbleStatusText?.text = "টাইপ হচ্ছে..."
                         }
 
                         override fun onError(error: Int) {
                             Log.w(TAG, "Speech recognition error code: $error")
                             isListening = false
-                            bubbleStatusText?.text = "আবার বলুন"
-                            bubbleMicBg?.setBackgroundResource(R.drawable.bg_bubble_idle)
-                            // Auto hide status after delay
-                            bubbleStatusText?.postDelayed({
-                                if (!isListening) bubbleStatusText?.visibility = View.GONE
-                            }, 1500)
+
+                            // If user hasn't explicitly stopped continuous dictation and it was a timeout/no-match or pause,
+                            // immediately keep listening so they don't have to press the bubble again!
+                            if (isContinuousSessionActive) {
+                                bubbleStatusText?.text = "শুনছি..."
+                                mainHandler.postDelayed({
+                                    if (isContinuousSessionActive && !isListening) {
+                                        restartListeningSession()
+                                    }
+                                }, 300)
+                            } else {
+                                bubbleStatusText?.text = "আবার বলুন"
+                                bubbleMicBg?.setBackgroundResource(R.drawable.bg_bubble_idle)
+                                bubbleStatusText?.postDelayed({
+                                    if (!isListening && !isContinuousSessionActive) bubbleStatusText?.visibility = View.GONE
+                                }, 1500)
+                            }
                         }
 
                         override fun onResults(results: Bundle?) {
                             isListening = false
-                            bubbleMicBg?.setBackgroundResource(R.drawable.bg_bubble_idle)
                             val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                             val rawText = matches?.firstOrNull() ?: ""
                             if (rawText.isNotBlank()) {
@@ -351,9 +361,21 @@ class BongoVoiceBubbleService : AccessibilityService() {
                                 bubbleStatusText?.text = formattedText
                                 injectTextIntoTargetApp(formattedText)
                             }
-                            bubbleStatusText?.postDelayed({
-                                if (!isListening) bubbleStatusText?.visibility = View.GONE
-                            }, 2000)
+
+                            // If continuous dictation is enabled, seamlessly restart listening so user can keep talking!
+                            if (isContinuousSessionActive) {
+                                mainHandler.postDelayed({
+                                    if (isContinuousSessionActive && !isListening) {
+                                        bubbleStatusText?.text = "বলুন..."
+                                        restartListeningSession()
+                                    }
+                                }, 350)
+                            } else {
+                                bubbleMicBg?.setBackgroundResource(R.drawable.bg_bubble_idle)
+                                bubbleStatusText?.postDelayed({
+                                    if (!isListening && !isContinuousSessionActive) bubbleStatusText?.visibility = View.GONE
+                                }, 2000)
+                            }
                         }
 
                         override fun onPartialResults(partialResults: Bundle?) {
@@ -374,8 +396,26 @@ class BongoVoiceBubbleService : AccessibilityService() {
         }
     }
 
+    private fun restartListeningSession() {
+        if (!isContinuousSessionActive) return
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, currentLanguage.localeCode)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, currentLanguage.localeCode)
+            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
+        }
+        try {
+            speechRecognizer?.startListening(intent)
+            isListening = true
+            bubbleMicBg?.setBackgroundResource(R.drawable.bg_bubble_active)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error restarting voice recognition: ${e.message}")
+        }
+    }
+
     private fun toggleVoiceTyping() {
-        if (isListening) {
+        if (isContinuousSessionActive || isListening) {
             stopVoiceTyping()
         } else {
             startVoiceTyping()
@@ -383,6 +423,7 @@ class BongoVoiceBubbleService : AccessibilityService() {
     }
 
     private fun startVoiceTyping() {
+        isContinuousSessionActive = true
         if (speechRecognizer == null) {
             initSpeechRecognizer()
         }
@@ -403,11 +444,14 @@ class BongoVoiceBubbleService : AccessibilityService() {
             bubbleMicBg?.setBackgroundResource(R.drawable.bg_bubble_active)
         } catch (e: Exception) {
             Log.e(TAG, "Error starting voice recognition: ${e.message}")
+            isContinuousSessionActive = false
             Toast.makeText(this, "Microphone unavailable", Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun stopVoiceTyping() {
+        isContinuousSessionActive = false
+        mainHandler.removeCallbacksAndMessages(null)
         if (isListening) {
             try {
                 speechRecognizer?.stopListening()
@@ -415,9 +459,9 @@ class BongoVoiceBubbleService : AccessibilityService() {
                 Log.e(TAG, "Error stopping speech recognizer: ${e.message}")
             }
             isListening = false
-            bubbleMicBg?.setBackgroundResource(R.drawable.bg_bubble_idle)
-            bubbleStatusText?.visibility = View.GONE
         }
+        bubbleMicBg?.setBackgroundResource(R.drawable.bg_bubble_idle)
+        bubbleStatusText?.visibility = View.GONE
     }
 
     private fun formatSpokenText(raw: String, language: DictationLanguage): String {

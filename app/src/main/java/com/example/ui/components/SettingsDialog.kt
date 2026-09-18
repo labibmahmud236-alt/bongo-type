@@ -61,6 +61,9 @@ import com.example.model.SpeechEngineType
 @Composable
 fun SettingsDialog(
     settings: BongoSettings,
+    isBubbleServiceActive: Boolean = false,
+    hasOverlayPermission: Boolean = false,
+    onRefreshPermissions: () -> Unit = {},
     onSaveSettings: (BongoSettings) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -241,6 +244,23 @@ fun SettingsDialog(
                     subtitle = "Launch Bongo Type in system tray automatically",
                     checked = currentSettings.startWithWindows,
                     onCheckedChange = { currentSettings = currentSettings.copy(startWithWindows = it) }
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Section 4: Universal Keyboard Floating Bubble (Permissions & Setup)
+                Text(
+                    text = "Universal Keyboard Bubble (IMO, WhatsApp, etc.)",
+                    color = Color(0xFF38BDF8),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                UniversalKeyboardBubbleCard(
+                    isServiceActive = isBubbleServiceActive,
+                    hasOverlayPermission = hasOverlayPermission,
+                    onRefresh = onRefreshPermissions
                 )
 
                 Spacer(modifier = Modifier.height(18.dp))

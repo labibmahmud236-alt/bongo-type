@@ -324,15 +324,6 @@ fun BongoTypeApp(viewModel: BongoTypeViewModel) {
                         }
                     }
 
-                    // NEW: Universal Keyboard Floating Bubble Controller (IMO, WhatsApp, Telegram, Messenger)
-                    item {
-                        UniversalKeyboardBubbleCard(
-                            isServiceActive = isBubbleServiceActive,
-                            hasOverlayPermission = hasOverlayPermission,
-                            onRefresh = { viewModel.checkBubblePermissions() }
-                        )
-                    }
-
                     // Active Target Application Workbench (Feature 1 & Feature 10)
                     item {
                         val activeContent = appTexts[activeApp] ?: ""
@@ -450,6 +441,9 @@ fun BongoTypeApp(viewModel: BongoTypeViewModel) {
     if (showSettingsDialog) {
         SettingsDialog(
             settings = settings,
+            isBubbleServiceActive = isBubbleServiceActive,
+            hasOverlayPermission = hasOverlayPermission,
+            onRefreshPermissions = { viewModel.checkBubblePermissions() },
             onSaveSettings = {
                 viewModel.updateSettings(it)
                 showSettingsDialog = false
