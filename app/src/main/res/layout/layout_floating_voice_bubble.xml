@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:padding="4dp">
+
+    <!-- Glowing Floating Mic Bubble (Messenger Style) -->
+    <FrameLayout
+        android:id="@+id/bubble_mic_bg"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:background="@drawable/bg_bubble_idle"
+        android:clickable="true"
+        android:focusable="true">
+
+        <ImageView
+            android:id="@+id/bubble_mic_icon"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:layout_gravity="center"
+            android:contentDescription="Voice Typing Mic"
+            android:src="@drawable/ic_bubble_mic" />
+
+        <!-- Language Badge Pill (BN / EN / AR) -->
+        <TextView
+            android:id="@+id/bubble_lang_badge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:background="@drawable/bg_lang_badge"
+            android:clickable="true"
+            android:focusable="true"
+            android:paddingHorizontal="4dp"
+            android:paddingVertical="2dp"
+            android:text="বাংলা"
+            android:textColor="#FFFFFF"
+            android:textSize="9sp"
+            android:textStyle="bold" />
+    </FrameLayout>
+
+    <!-- Real-time Speech Preview Strip -->
+    <TextView
+        android:id="@+id/bubble_status_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="6dp"
+        android:background="@drawable/bg_bubble_preview"
+        android:maxWidth="220dp"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="8dp"
+        android:text="বলুন..."
+        android:textColor="#FFFFFF"
+        android:textSize="13sp"
+        android:visibility="gone" />
+
+    <!-- Tiny Close / Dismiss Button -->
+    <ImageView
+        android:id="@+id/bubble_close_btn"
+        android:layout_width="22dp"
+        android:layout_height="22dp"
+        android:layout_marginStart="4dp"
+        android:background="@drawable/bg_bubble_close"
+        android:contentDescription="Close Bubble"
+        android:padding="5dp"
+        android:src="@drawable/ic_bubble_close" />
+
+</LinearLayout>

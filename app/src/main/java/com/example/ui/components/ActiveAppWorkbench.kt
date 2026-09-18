@@ -25,26 +25,22 @@ import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.EditNote
+import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.VolumeUp
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.testTag
@@ -100,11 +96,13 @@ fun ActiveAppWorkbench(
                     Spacer(modifier = Modifier.width(14.dp))
 
                     val appIcon = when (activeApp) {
+                        ActiveAppType.IMO -> Icons.Default.Chat
+                        ActiveAppType.WHATSAPP -> Icons.Default.Chat
+                        ActiveAppType.MESSENGER -> Icons.Default.Forum
+                        ActiveAppType.TELEGRAM -> Icons.Default.Send
+                        ActiveAppType.CHROME -> Icons.Default.Language
                         ActiveAppType.NOTEPAD -> Icons.Default.EditNote
                         ActiveAppType.VS_CODE -> Icons.Default.Code
-                        ActiveAppType.WHATSAPP -> Icons.Default.Chat
-                        ActiveAppType.WORD -> Icons.Default.Description
-                        ActiveAppType.CHROME -> Icons.Default.Language
                     }
 
                     Icon(
@@ -138,7 +136,7 @@ fun ActiveAppWorkbench(
                 }
             }
 
-            // Window Selection Tabs (Notepad, VS Code, WhatsApp, Word, Chrome)
+            // Window Selection Tabs (WhatsApp, IMO, Messenger, Telegram, Chrome, Notepad, VS Code)
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier
@@ -176,13 +174,13 @@ fun ActiveAppWorkbench(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(180.dp)
+                    .height(170.dp)
                     .background(Color(0xFF0D1117))
                     .padding(14.dp)
             ) {
                 if (currentText.isEmpty()) {
                     Text(
-                        text = "Cursor active here. Dictate speech using Bongo Type or tap sample prompts below to test universal voice typing...",
+                        text = "Cursor active in ${activeApp.appName}. Click the mic or tap sample prompts below to test universal voice typing...",
                         color = Color(0xFF4B5563),
                         fontSize = 14.sp,
                         lineHeight = 20.sp
@@ -256,7 +254,7 @@ fun ActiveAppWorkbench(
                     DictationLanguage.BANGLA -> listOf(
                         "আমি এখন কথা বলছি।",
                         "কেমন আছো বন্ধু?",
-                        "বাংলাদেশ আমার মাতৃভূমি।",
+                        "আমি একটু পরে আসছি।",
                         "আজকের আবহাওয়া খুব সুন্দর।"
                     )
                     DictationLanguage.BANGLISH -> listOf(

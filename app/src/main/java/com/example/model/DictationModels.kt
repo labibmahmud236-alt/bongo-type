@@ -26,11 +26,13 @@ enum class GlobalShortcut(val label: String, val keys: String) {
 }
 
 enum class ActiveAppType(val appName: String, val windowTitle: String, val iconName: String) {
-    NOTEPAD("Notepad", "Untitled - Notepad", "edit_note"),
-    VS_CODE("VS Code", "main.py - Bongo Type - Visual Studio Code", "code"),
-    WHATSAPP("WhatsApp Desktop", "WhatsApp - Family Group", "chat"),
-    WORD("Microsoft Word", "Document 1 - Word", "description"),
-    CHROME("Google Chrome", "New Tab - Google Chrome", "language")
+    IMO("IMO", "IMO Chat - Friend", "chat"),
+    WHATSAPP("WhatsApp", "WhatsApp - Family Group", "chat"),
+    MESSENGER("Messenger", "Messenger - Active Conversation", "forum"),
+    TELEGRAM("Telegram", "Telegram - Channels & Groups", "send"),
+    CHROME("Google Chrome", "Google Chrome Search Bar", "language"),
+    NOTEPAD("Notepad", "Untitled - Notepad Note", "edit_note"),
+    VS_CODE("VS Code", "BongoType.kt - Code Editor", "code")
 }
 
 data class DictationHistoryItem(
@@ -51,5 +53,6 @@ data class BongoSettings(
     val alwaysOnTop: Boolean = true,
     val typingSpeedMs: Long = 20L,
     val soundEffects: Boolean = true,
-    val darkTheme: Boolean = true
+    val darkTheme: Boolean = true,
+    val enableFloatingBubble: Boolean = true
 )

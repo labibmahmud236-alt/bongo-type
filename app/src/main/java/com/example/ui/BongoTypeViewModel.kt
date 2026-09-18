@@ -1,6 +1,8 @@
 package com.example.ui
 
 import android.app.Application
+import android.os.Build
+import android.provider.Settings
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.model.ActiveAppType
@@ -8,14 +10,12 @@ import com.example.model.BongoSettings
 import com.example.model.DictationHistoryItem
 import com.example.model.DictationLanguage
 import com.example.model.MicState
+import com.example.service.BongoVoiceBubbleService
 import com.example.speech.SpeechRecognizerManager
 import com.example.typing.TextInjector
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 
 class BongoTypeViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -32,17 +32,19 @@ class BongoTypeViewModel(application: Application) : AndroidViewModel(applicatio
     private val _settings = MutableStateFlow(BongoSettings())
     val settings: StateFlow<BongoSettings> = _settings.asStateFlow()
 
-    private val _activeApp = MutableStateFlow(ActiveAppType.NOTEPAD)
+    private val _activeApp = MutableStateFlow(ActiveAppType.WHATSAPP)
     val activeApp: StateFlow<ActiveAppType> = _activeApp.asStateFlow()
 
     // Editor texts for each active simulated application
     private val _appTexts = MutableStateFlow(
         mutableMapOf(
-            ActiveAppType.NOTEPAD to "স্বাগতম Bongo Type এ। এখানে সরাসরি ভয়েস টাইপিং হবে।\n",
-            ActiveAppType.VS_CODE to "# Bongo Type Voice Typing Test\nprint('Universal dictation ready')\n",
             ActiveAppType.WHATSAPP to "Hey! Checking out the new Bengali voice assistant\n",
-            ActiveAppType.WORD to "Universal Voice Dictation Report - Windows 11\n",
-            ActiveAppType.CHROME to "https://google.com/search?q="
+            ActiveAppType.IMO to "হ্যালো, কেমন আছো?\n",
+            ActiveAppType.MESSENGER to "Bongo Type দিয়ে মেসেঞ্জারে ভয়েস টাইপিং হচ্ছে!\n",
+            ActiveAppType.TELEGRAM to "Bongo Type voice bubble enabled for Telegram\n",
+            ActiveAppType.CHROME to "https://google.com/search?q=",
+            ActiveAppType.NOTEPAD to "স্বাগতম Bongo Type এ। এখানে সরাসরি ভয়েস টাইপিং হবে।\n",
+            ActiveAppType.VS_CODE to "# Bongo Type Voice Typing Test\nprint('Universal dictation ready')\n"
         )
     )
     val appTexts: StateFlow<Map<ActiveAppType, String>> = _appTexts.asStateFlow()
@@ -53,9 +55,26 @@ class BongoTypeViewModel(application: Application) : AndroidViewModel(applicatio
     private val _isPureMiniMode = MutableStateFlow(false)
     val isPureMiniMode: StateFlow<Boolean> = _isPureMiniMode.asStateFlow()
 
+    private val _isBubbleServiceActive = MutableStateFlow(false)
+    val isBubbleServiceActive: StateFlow<Boolean> = _isBubbleServiceActive.asStateFlow()
+
+    private val _hasOverlayPermission = MutableStateFlow(false)
+    val hasOverlayPermission: StateFlow<Boolean> = _hasOverlayPermission.asStateFlow()
+
     init {
         speechManager.onFinalResult = { text, lang ->
             handleDictatedText(text, lang)
+        }
+        checkBubblePermissions()
+    }
+
+    fun checkBubblePermissions() {
+        val app = getApplication<Application>()
+        _isBubbleServiceActive.value = BongoVoiceBubbleService.isAccessibilityEnabled(app)
+        _hasOverlayPermission.value = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Settings.canDrawOverlays(app)
+        } else {
+            true
         }
     }
 
@@ -92,7 +111,6 @@ class BongoTypeViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun simulateGlobalShortcut() {
         textInjector.triggerHapticFeedback()
-        // Shortcut triggers mic toggle and brings pill to focus
         speechManager.toggleListening()
     }
 

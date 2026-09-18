@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Bongo Type</string>
+    <string name="accessibility_service_description">Bongo Type ভয়েস টাইপিং সার্ভিস। যেকোনো মেসেজিং অ্যাপ (WhatsApp, IMO, Telegram, Messenger) ওপেন করে চ্যাটবক্সে ক্লিক করলেই একটি ফ্রেমহীন ফ্লোটিং ভয়েস বাবল ওপেন হবে যা সরাসরি চ্যাটবক্সে কথা টাইপ করে দেয়।</string>
 </resources>

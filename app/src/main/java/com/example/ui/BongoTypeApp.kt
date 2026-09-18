@@ -69,6 +69,7 @@ import com.example.ui.components.ActiveAppWorkbench
 import com.example.ui.components.FloatingVoicePill
 import com.example.ui.components.SettingsDialog
 import com.example.ui.components.SystemTrayBar
+import com.example.ui.components.UniversalKeyboardBubbleCard
 
 @Composable
 fun BongoTypeApp(viewModel: BongoTypeViewModel) {
@@ -83,6 +84,8 @@ fun BongoTypeApp(viewModel: BongoTypeViewModel) {
     val appTexts by viewModel.appTexts.collectAsStateWithLifecycle()
     val history by viewModel.history.collectAsStateWithLifecycle()
     val isPureMiniMode by viewModel.isPureMiniMode.collectAsStateWithLifecycle()
+    val isBubbleServiceActive by viewModel.isBubbleServiceActive.collectAsStateWithLifecycle()
+    val hasOverlayPermission by viewModel.hasOverlayPermission.collectAsStateWithLifecycle()
 
     var showSettingsDialog by remember { mutableStateOf(false) }
     var showHistoryDialog by remember { mutableStateOf(false) }
@@ -93,6 +96,11 @@ fun BongoTypeApp(viewModel: BongoTypeViewModel) {
                 Manifest.permission.RECORD_AUDIO
             ) == PackageManager.PERMISSION_GRANTED
         )
+    }
+
+    // Periodically re-check permission status when returning to app
+    LaunchedEffect(Unit) {
+        viewModel.checkBubblePermissions()
     }
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -228,7 +236,7 @@ fun BongoTypeApp(viewModel: BongoTypeViewModel) {
                                         border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF38BDF8).copy(alpha = 0.5f))
                                     ) {
                                         Text(
-                                            text = "Win 11",
+                                            text = "Win 11 & Mobile",
                                             color = Color(0xFF38BDF8),
                                             fontSize = 10.sp,
                                             fontWeight = FontWeight.Bold,
@@ -253,7 +261,7 @@ fun BongoTypeApp(viewModel: BongoTypeViewModel) {
                                         .clip(RoundedCornerShape(10.dp))
                                         .clickable { viewModel.simulateGlobalShortcut() }
                                         .testTag("shortcut_trigger_button")
-                                ) {
+                                    ) {
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
                                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
@@ -316,6 +324,15 @@ fun BongoTypeApp(viewModel: BongoTypeViewModel) {
                         }
                     }
 
+                    // NEW: Universal Keyboard Floating Bubble Controller (IMO, WhatsApp, Telegram, Messenger)
+                    item {
+                        UniversalKeyboardBubbleCard(
+                            isServiceActive = isBubbleServiceActive,
+                            hasOverlayPermission = hasOverlayPermission,
+                            onRefresh = { viewModel.checkBubblePermissions() }
+                        )
+                    }
+
                     // Active Target Application Workbench (Feature 1 & Feature 10)
                     item {
                         val activeContent = appTexts[activeApp] ?: ""
@@ -363,44 +380,57 @@ fun BongoTypeApp(viewModel: BongoTypeViewModel) {
                                         }
                                         Text(
                                             text = "${history.size} items",
-                                            color = Color(0xFF94A3B8),
+                                            color = Color(0xFF64748B),
                                             fontSize = 11.sp
                                         )
                                     }
 
                                     Spacer(modifier = Modifier.height(10.dp))
 
-                                    history.take(4).forEach { item ->
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                    history.take(6).forEach { historyItem ->
+                                        Surface(
+                                            shape = RoundedCornerShape(8.dp),
+                                            color = Color(0xFF0F172A),
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                                 .padding(vertical = 4.dp)
-                                                .clip(RoundedCornerShape(8.dp))
-                                                .background(Color(0xFF0F172A))
-                                                .padding(horizontal = 10.dp, vertical = 6.dp)
                                         ) {
                                             Row(
                                                 verticalAlignment = Alignment.CenterVertically,
-                                                modifier = Modifier.weight(1f)
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                modifier = Modifier.padding(10.dp)
                                             ) {
-                                                Text(text = item.language.flag, fontSize = 12.sp)
-                                                Spacer(modifier = Modifier.width(8.dp))
-                                                Text(
-                                                    text = item.text,
-                                                    color = Color(0xFFE2E8F0),
-                                                    fontSize = 12.sp,
-                                                    maxLines = 1
-                                                )
+                                                Column(modifier = Modifier.weight(1f)) {
+                                                    Text(
+                                                        text = historyItem.text,
+                                                        color = Color(0xFFE2E8F0),
+                                                        fontSize = 13.sp,
+                                                        fontWeight = FontWeight.Medium
+                                                    )
+                                                    Spacer(modifier = Modifier.height(2.dp))
+                                                    Text(
+                                                        text = "${historyItem.language.flag} ${historyItem.language.displayName} • Target: ${historyItem.targetApp}",
+                                                        color = Color(0xFF64748B),
+                                                        fontSize = 10.sp
+                                                    )
+                                                }
+                                                IconButton(
+                                                    onClick = {
+                                                        val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                                        val clip = android.content.ClipData.newPlainText("Bongo Type", historyItem.text)
+                                                        clipboard.setPrimaryClip(clip)
+                                                        android.widget.Toast.makeText(context, "Copied to clipboard", android.widget.Toast.LENGTH_SHORT).show()
+                                                    },
+                                                    modifier = Modifier.size(28.dp)
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.ContentCopy,
+                                                        contentDescription = "Copy text",
+                                                        tint = Color(0xFF38BDF8),
+                                                        modifier = Modifier.size(16.dp)
+                                                    )
+                                                }
                                             }
-
-                                            Text(
-                                                text = item.targetApp,
-                                                color = Color(0xFF64748B),
-                                                fontSize = 10.sp,
-                                                fontWeight = FontWeight.Medium
-                                            )
                                         }
                                     }
                                 }
@@ -409,17 +439,21 @@ fun BongoTypeApp(viewModel: BongoTypeViewModel) {
                     }
 
                     item {
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(20.dp))
                     }
                 }
             }
         }
     }
 
+    // Settings Dialog
     if (showSettingsDialog) {
         SettingsDialog(
             settings = settings,
-            onSaveSettings = { viewModel.updateSettings(it) },
+            onSaveSettings = {
+                viewModel.updateSettings(it)
+                showSettingsDialog = false
+            },
             onDismiss = { showSettingsDialog = false }
         )
     }
