@@ -1,0 +1,6 @@
+{
+  "name": "Bongo Type",
+  "description": "Windows-style voice typing assistant for Bengali, Banglish, and Arabic with continuous dictation and instant text injection.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
